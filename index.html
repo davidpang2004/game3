@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Smart Brain</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:system-ui,sans-serif;background:#f5f5f0;min-height:100vh;display:flex;justify-content:center;padding:2rem 1rem;}
+  #root{width:100%;max-width:500px;}
+  input{width:100%;padding:10px 12px;font-size:15px;border:1.5px solid #ccc;border-radius:10px;background:#fff;color:#222;outline:none;cursor:text;}
+  input:focus{border-color:#888;}
+  button{font-family:system-ui,sans-serif;font-size:14px;padding:9px 20px;border:1.5px solid #bbb;border-radius:10px;background:#fff;color:#333;cursor:pointer;}
+  button:hover{background:#f0f0f0;}
+  button:active{transform:scale(0.97);}
+  .muted{color:#888;font-size:13px;}
+  .age-btn{padding:14px 10px;border-radius:14px;border:2px solid #ddd;background:#fff;cursor:pointer;text-align:center;width:100%;transition:all .15s;}
+  .age-btn:hover{border-color:#888;background:#f9f9f9;}
+  .age-btn.selected{border-color:#4a7fe5;background:#eef3fd;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useRef}=React;
+
+const QUESTIONS={
+  "4-6":[
+    {q:"What color is the sky on a sunny day?",a:"Blue",choices:["Green","Blue","Pink","Yellow"],diff:"easy",pts:1},
+    {q:"How many legs does a dog have?",a:"Four",choices:["Two","Three","Four","Six"],diff:"easy",pts:1},
+    {q:"What sound does a cow make?",a:"Moo",choices:["Oink","Moo","Baa","Woof"],diff:"easy",pts:1},
+    {q:"What do we use to write on paper?",a:"Pencil",choices:["Spoon","Pencil","Fork","Brush"],diff:"easy",pts:1},
+    {q:"What shape is a ball?",a:"Round",choices:["Square","Round","Triangle","Flat"],diff:"easy",pts:1},
+    {q:"How many fingers do we have on one hand?",a:"Five",choices:["Three","Four","Five","Six"],diff:"easy",pts:1},
+    {q:"What do fish live in?",a:"Water",choices:["Sand","Water","Trees","Grass"],diff:"easy",pts:1},
+    {q:"What color is a banana?",a:"Yellow",choices:["Red","Blue","Yellow","Green"],diff:"easy",pts:1},
+    {q:"What do we drink when we are thirsty?",a:"Water",choices:["Juice","Milk","Water","Soup"],diff:"easy",pts:1},
+    {q:"What animal says woof?",a:"Dog",choices:["Cat","Dog","Bird","Fish"],diff:"easy",pts:1},
+    {q:"What do we wear on our feet?",a:"Shoes",choices:["Hats","Shoes","Gloves","Scarves"],diff:"easy",pts:1},
+    {q:"What color is grass?",a:"Green",choices:["Blue","Green","Red","Orange"],diff:"easy",pts:1},
+    {q:"How many eyes do we have?",a:"Two",choices:["One","Two","Three","Four"],diff:"easy",pts:1},
+    {q:"What do caterpillars turn into?",a:"Butterflies",choices:["Bees","Butterflies","Birds","Frogs"],diff:"easy",pts:1},
+    {q:"What meal do we eat in the morning?",a:"Breakfast",choices:["Lunch","Dinner","Breakfast","Supper"],diff:"easy",pts:1},
+    {q:"What is 1 + 1?",a:"2",choices:["1","2","3","4"],diff:"easy",pts:1},
+    {q:"Which animal has a long neck?",a:"Giraffe",choices:["Elephant","Giraffe","Lion","Zebra"],diff:"medium",pts:2},
+    {q:"What do bees make?",a:"Honey",choices:["Milk","Honey","Jam","Butter"],diff:"medium",pts:2},
+    {q:"How many wheels does a tricycle have?",a:"Three",choices:["Two","Three","Four","Five"],diff:"medium",pts:2},
+    {q:"What color is a carrot?",a:"Orange",choices:["Red","Orange","Yellow","Purple"],diff:"medium",pts:2},
+    {q:"What do you call baby cats?",a:"Kittens",choices:["Puppies","Kittens","Cubs","Chicks"],diff:"medium",pts:2},
+    {q:"What falls from the sky when it rains?",a:"Water drops",choices:["Snow","Water drops","Leaves","Dust"],diff:"medium",pts:2},
+    {q:"Where do birds live?",a:"Nests",choices:["Caves","Dens","Nests","Holes"],diff:"medium",pts:2},
+    {q:"What is 2 + 2?",a:"4",choices:["3","4","5","6"],diff:"medium",pts:2},
+    {q:"What animal gives us milk?",a:"Cow",choices:["Pig","Cow","Sheep","Hen"],diff:"medium",pts:2},
+    {q:"What color is a ripe strawberry?",a:"Red",choices:["Pink","Red","Purple","Orange"],diff:"medium",pts:2},
+    {q:"How many legs does an insect have?",a:"Six",choices:["Four","Six","Eight","Ten"],diff:"hard",pts:3},
+    {q:"What is the opposite of hot?",a:"Cold",choices:["Warm","Cool","Cold","Icy"],diff:"hard",pts:3},
+    {q:"Which fruit is red and grows on trees?",a:"Apple",choices:["Mango","Grape","Apple","Berry"],diff:"hard",pts:3},
+    {q:"How many days are in a week?",a:"Seven",choices:["Five","Six","Seven","Eight"],diff:"hard",pts:3},
+    {q:"What do plants need to grow?",a:"Sunlight and water",choices:["Salt and sugar","Sunlight and water","Sand and wind","Ice and snow"],diff:"hard",pts:3},
+    {q:"What number comes after 9?",a:"10",choices:["8","9","10","11"],diff:"hard",pts:3},
+    {q:"What animal is the king of the jungle?",a:"Lion",choices:["Tiger","Elephant","Lion","Gorilla"],diff:"hard",pts:3},
+    {q:"What is the biggest land animal?",a:"Elephant",choices:["Rhinoceros","Hippopotamus","Elephant","Giraffe"],diff:"hard",pts:3},
+    {q:"What do we breathe?",a:"Air",choices:["Water","Air","Steam","Smoke"],diff:"hard",pts:3},
+    {q:"How many months are in a year?",a:"Twelve",choices:["Ten","Eleven","Twelve","Thirteen"],diff:"hard",pts:3},
+    {q:"What is a baby dog called?",a:"Puppy",choices:["Kitten","Cub","Puppy","Foal"],diff:"hard",pts:3},
+    {q:"What color are clouds?",a:"White",choices:["Gray","White","Blue","Silver"],diff:"hard",pts:3},
+    {q:"What do we use to cut food?",a:"Knife",choices:["Spoon","Fork","Knife","Stick"],diff:"hard",pts:3},
+    {q:"What comes after Monday?",a:"Tuesday",choices:["Sunday","Wednesday","Tuesday","Thursday"],diff:"hard",pts:3},
+    {q:"What is 3 + 2?",a:"5",choices:["4","5","6","7"],diff:"hard",pts:3},
+    {q:"What color is the sun?",a:"Yellow",choices:["Orange","White","Yellow","Gold"],diff:"hard",pts:3},
+    {q:"How many sides does a triangle have?",a:"Three",choices:["Two","Three","Four","Five"],diff:"hard",pts:3},
+    {q:"What is a baby chicken called?",a:"Chick",choices:["Duckling","Chick","Foal","Lamb"],diff:"hard",pts:3},
+    {q:"Which body part do we use to smell?",a:"Nose",choices:["Ear","Eye","Nose","Mouth"],diff:"hard",pts:3},
+    {q:"What do we use to see?",a:"Eyes",choices:["Ears","Eyes","Hands","Nose"],diff:"hard",pts:3},
+    {q:"What season has snow?",a:"Winter",choices:["Spring","Summer","Autumn","Winter"],diff:"hard",pts:3},
+    {q:"What do frogs do in water?",a:"Swim",choices:["Fly","Swim","Dig","Run"],diff:"hard",pts:3},
+    {q:"What is a baby chicken called?",a:"Chick",choices:["Cub","Foal","Chick","Kitten"],diff:"hard",pts:3},
+    {q:"How many toes do we have in total?",a:"Ten",choices:["Eight","Nine","Ten","Twelve"],diff:"hard",pts:3},
+  ],
+  "7-8":[
+    {q:"What color is the sky on a sunny day?",a:"Blue",choices:["Green","Blue","Pink","Yellow"],diff:"easy",pts:1},
+    {q:"How many legs does a spider have?",a:"Eight",choices:["Six","Eight","Ten","Four"],diff:"easy",pts:1},
+    {q:"What is 5 + 7?",a:"12",choices:["11","12","13","14"],diff:"easy",pts:1},
+    {q:"Which animal is known as man's best friend?",a:"Dog",choices:["Cat","Dog","Rabbit","Hamster"],diff:"easy",pts:1},
+    {q:"How many days are in a week?",a:"Seven",choices:["Five","Six","Seven","Eight"],diff:"easy",pts:1},
+    {q:"What do bees make?",a:"Honey",choices:["Milk","Honey","Jam","Butter"],diff:"easy",pts:1},
+    {q:"What is the color of a flamingo?",a:"Pink",choices:["Red","Orange","Pink","White"],diff:"easy",pts:1},
+    {q:"Which season comes after winter?",a:"Spring",choices:["Summer","Autumn","Spring","Winter"],diff:"easy",pts:1},
+    {q:"What shape has four equal sides?",a:"Square",choices:["Circle","Triangle","Rectangle","Square"],diff:"easy",pts:1},
+    {q:"What do caterpillars turn into?",a:"Butterflies",choices:["Bees","Butterflies","Moths","Dragonflies"],diff:"easy",pts:1},
+    {q:"How many months are in a year?",a:"Twelve",choices:["Ten","Eleven","Twelve","Thirteen"],diff:"easy",pts:1},
+    {q:"What is 9 - 4?",a:"5",choices:["3","4","5","6"],diff:"easy",pts:1},
+    {q:"What color is a ripe tomato?",a:"Red",choices:["Yellow","Red","Orange","Purple"],diff:"easy",pts:1},
+    {q:"How many sides does a rectangle have?",a:"Four",choices:["Three","Four","Five","Six"],diff:"easy",pts:1},
+    {q:"What is the capital of the USA?",a:"Washington D.C.",choices:["New York","Los Angeles","Washington D.C.","Chicago"],diff:"easy",pts:1},
+    {q:"What do we call a baby dog?",a:"Puppy",choices:["Kitten","Puppy","Cub","Foal"],diff:"easy",pts:1},
+    {q:"Which planet do we live on?",a:"Earth",choices:["Mars","Earth","Venus","Jupiter"],diff:"medium",pts:2},
+    {q:"What is the biggest animal in the ocean?",a:"Blue whale",choices:["Great white shark","Blue whale","Dolphin","Giant squid"],diff:"medium",pts:2},
+    {q:"What country has the most natural lakes?",a:"Canada",choices:["Russia","USA","Canada","Finland"],diff:"medium",pts:2},
+    {q:"What is 6 x 7?",a:"42",choices:["36","40","42","48"],diff:"medium",pts:2},
+    {q:"Which animal can change its color?",a:"Chameleon",choices:["Lizard","Chameleon","Gecko","Iguana"],diff:"medium",pts:2},
+    {q:"How many continents are there?",a:"Seven",choices:["Five","Six","Seven","Eight"],diff:"medium",pts:2},
+    {q:"What is the fastest land animal?",a:"Cheetah",choices:["Lion","Horse","Cheetah","Ostrich"],diff:"medium",pts:2},
+    {q:"Which is the longest river in the world?",a:"Nile",choices:["Amazon","Nile","Yangtze","Mississippi"],diff:"medium",pts:2},
+    {q:"What gas do plants take in?",a:"Carbon dioxide",choices:["Oxygen","Nitrogen","Carbon dioxide","Hydrogen"],diff:"medium",pts:2},
+    {q:"How many bones are in the adult human body?",a:"206",choices:["196","206","216","226"],diff:"medium",pts:2},
+    {q:"What is the largest continent?",a:"Asia",choices:["Africa","Asia","Europe","Americas"],diff:"medium",pts:2},
+    {q:"Which ocean is the largest?",a:"Pacific",choices:["Atlantic","Indian","Arctic","Pacific"],diff:"medium",pts:2},
+    {q:"What do plants need to make their own food?",a:"Sunlight",choices:["Wind","Moonlight","Sunlight","Rain"],diff:"medium",pts:2},
+    {q:"What is 8 x 8?",a:"64",choices:["56","60","64","72"],diff:"medium",pts:2},
+    {q:"What is the opposite of ancient?",a:"Modern",choices:["Old","Modern","Aged","Historic"],diff:"medium",pts:2},
+    {q:"Which sense does the nose use?",a:"Smell",choices:["Taste","Touch","Smell","Sight"],diff:"medium",pts:2},
+    {q:"What is the hardest natural substance?",a:"Diamond",choices:["Quartz","Diamond","Titanium","Obsidian"],diff:"hard",pts:3},
+    {q:"What is the capital of France?",a:"Paris",choices:["Rome","London","Paris","Madrid"],diff:"hard",pts:3},
+    {q:"How many zeros are in one thousand?",a:"Three",choices:["Two","Three","Four","Five"],diff:"hard",pts:3},
+    {q:"Which planet is closest to the Sun?",a:"Mercury",choices:["Venus","Mercury","Mars","Jupiter"],diff:"hard",pts:3},
+    {q:"What is the chemical symbol for water?",a:"H2O",choices:["HO","H2O","H2O2","OH"],diff:"hard",pts:3},
+    {q:"How many sides does a hexagon have?",a:"Six",choices:["Five","Six","Seven","Eight"],diff:"hard",pts:3},
+    {q:"What is the capital of Australia?",a:"Canberra",choices:["Sydney","Melbourne","Brisbane","Canberra"],diff:"hard",pts:3},
+    {q:"What is 144 divided by 12?",a:"12",choices:["10","11","12","13"],diff:"hard",pts:3},
+    {q:"Which animal lays the largest eggs?",a:"Ostrich",choices:["Eagle","Ostrich","Crocodile","Penguin"],diff:"hard",pts:3},
+    {q:"What is the powerhouse of the cell?",a:"Mitochondria",choices:["Nucleus","Mitochondria","Ribosome","Vacuole"],diff:"hard",pts:3},
+    {q:"What is 25% of 200?",a:"50",choices:["25","40","50","75"],diff:"hard",pts:3},
+    {q:"Which gas do we breathe in?",a:"Oxygen",choices:["Nitrogen","Carbon dioxide","Oxygen","Hydrogen"],diff:"hard",pts:3},
+    {q:"Who wrote Romeo and Juliet?",a:"Shakespeare",choices:["Dickens","Shakespeare","Austen","Twain"],diff:"hard",pts:3},
+    {q:"What is the main language spoken in Brazil?",a:"Portuguese",choices:["Spanish","Portuguese","English","French"],diff:"hard",pts:3},
+    {q:"What does a thermometer measure?",a:"Temperature",choices:["Pressure","Weight","Temperature","Speed"],diff:"hard",pts:3},
+    {q:"Which planet has rings around it?",a:"Saturn",choices:["Jupiter","Saturn","Uranus","Neptune"],diff:"hard",pts:3},
+    {q:"What is the square root of 81?",a:"9",choices:["7","8","9","10"],diff:"hard",pts:3},
+    {q:"What continent is Egypt in?",a:"Africa",choices:["Asia","Europe","Africa","Middle East"],diff:"hard",pts:3},
+  ],
+  "9-12":[
+    {q:"What is the chemical symbol for gold?",a:"Au",choices:["Go","Gd","Au","Ag"],diff:"easy",pts:1},
+    {q:"How many planets are in our solar system?",a:"Eight",choices:["Seven","Eight","Nine","Ten"],diff:"easy",pts:1},
+    {q:"What is the largest organ in the human body?",a:"Skin",choices:["Liver","Brain","Skin","Heart"],diff:"easy",pts:1},
+    {q:"What is 12 x 12?",a:"144",choices:["124","132","144","156"],diff:"easy",pts:1},
+    {q:"Which country is the largest by area?",a:"Russia",choices:["USA","China","Russia","Canada"],diff:"easy",pts:1},
+    {q:"What is the speed of light rounded to km/s?",a:"300,000",choices:["30,000","300,000","3,000,000","186,000"],diff:"easy",pts:1},
+    {q:"What element has atomic number 1?",a:"Hydrogen",choices:["Helium","Hydrogen","Lithium","Carbon"],diff:"easy",pts:1},
+    {q:"What is the capital of Japan?",a:"Tokyo",choices:["Osaka","Kyoto","Tokyo","Hiroshima"],diff:"easy",pts:1},
+    {q:"Who painted the Mona Lisa?",a:"Leonardo da Vinci",choices:["Michelangelo","Raphael","Leonardo da Vinci","Picasso"],diff:"easy",pts:1},
+    {q:"What is the longest bone in the human body?",a:"Femur",choices:["Tibia","Femur","Humerus","Fibula"],diff:"easy",pts:1},
+    {q:"What is 15% of 300?",a:"45",choices:["30","40","45","60"],diff:"easy",pts:1},
+    {q:"What gas makes up most of Earth's atmosphere?",a:"Nitrogen",choices:["Oxygen","Nitrogen","Carbon dioxide","Argon"],diff:"easy",pts:1},
+    {q:"Which ocean is the deepest?",a:"Pacific",choices:["Atlantic","Indian","Arctic","Pacific"],diff:"easy",pts:1},
+    {q:"What is the powerhouse of the cell?",a:"Mitochondria",choices:["Nucleus","Mitochondria","Ribosome","Vacuole"],diff:"easy",pts:1},
+    {q:"What year did World War II end?",a:"1945",choices:["1943","1944","1945","1946"],diff:"easy",pts:1},
+    {q:"What is the Pythagorean theorem?",a:"a² + b² = c²",choices:["a + b = c","a² - b² = c²","a² + b² = c²","a x b = c²"],diff:"easy",pts:1},
+    {q:"What is the largest planet in our solar system?",a:"Jupiter",choices:["Saturn","Jupiter","Uranus","Neptune"],diff:"medium",pts:2},
+    {q:"What language has the most native speakers?",a:"Mandarin",choices:["English","Spanish","Hindi","Mandarin"],diff:"medium",pts:2},
+    {q:"What is the only metal liquid at room temperature?",a:"Mercury",choices:["Gallium","Mercury","Cesium","Bromine"],diff:"medium",pts:2},
+    {q:"Who developed the theory of relativity?",a:"Einstein",choices:["Newton","Einstein","Bohr","Curie"],diff:"medium",pts:2},
+    {q:"What is the main component of the Sun?",a:"Hydrogen",choices:["Helium","Hydrogen","Carbon","Oxygen"],diff:"medium",pts:2},
+    {q:"What is the square root of 144?",a:"12",choices:["10","11","12","13"],diff:"medium",pts:2},
+    {q:"How many chromosomes do humans have?",a:"46",choices:["23","44","46","48"],diff:"medium",pts:2},
+    {q:"What is the capital of Brazil?",a:"Brasília",choices:["Rio de Janeiro","São Paulo","Brasília","Salvador"],diff:"medium",pts:2},
+    {q:"Who wrote Harry Potter?",a:"J.K. Rowling",choices:["J.R.R. Tolkien","J.K. Rowling","C.S. Lewis","Roald Dahl"],diff:"medium",pts:2},
+    {q:"What is the chemical formula for table salt?",a:"NaCl",choices:["NaCl","KCl","NaF","CaCl2"],diff:"medium",pts:2},
+    {q:"How many sides does an octagon have?",a:"Eight",choices:["Six","Seven","Eight","Nine"],diff:"medium",pts:2},
+    {q:"In what year did humans first land on the Moon?",a:"1969",choices:["1965","1967","1969","1972"],diff:"medium",pts:2},
+    {q:"What is the smallest country in the world?",a:"Vatican City",choices:["Monaco","San Marino","Vatican City","Liechtenstein"],diff:"medium",pts:2},
+    {q:"What is the freezing point of water in Celsius?",a:"0°C",choices:["-5°C","0°C","4°C","10°C"],diff:"medium",pts:2},
+    {q:"Which blood type is the universal donor?",a:"O negative",choices:["A positive","B negative","O positive","O negative"],diff:"medium",pts:2},
+    {q:"What is photosynthesis?",a:"Making food from sunlight",choices:["Breathing oxygen","Making food from sunlight","Digesting food","Absorbing water"],diff:"medium",pts:2},
+    {q:"What is the rarest blood type?",a:"AB negative",choices:["O negative","A negative","B negative","AB negative"],diff:"hard",pts:3},
+    {q:"What is Newton's second law of motion?",a:"F = ma",choices:["F = mv","F = ma","F = mg","E = mc²"],diff:"hard",pts:3},
+    {q:"What is the chemical symbol for iron?",a:"Fe",choices:["Ir","In","Fe","Fr"],diff:"hard",pts:3},
+    {q:"How many bones are in the human skull?",a:"22",choices:["14","18","22","28"],diff:"hard",pts:3},
+    {q:"What is the deepest lake in the world?",a:"Lake Baikal",choices:["Lake Superior","Caspian Sea","Lake Baikal","Lake Tanganyika"],diff:"hard",pts:3},
+    {q:"What is the boiling point of water in Fahrenheit?",a:"212°F",choices:["100°F","180°F","212°F","250°F"],diff:"hard",pts:3},
+    {q:"Who discovered penicillin?",a:"Alexander Fleming",choices:["Louis Pasteur","Alexander Fleming","Marie Curie","Edward Jenner"],diff:"hard",pts:3},
+    {q:"What is the most abundant element in Earth's crust?",a:"Oxygen",choices:["Silicon","Aluminum","Iron","Oxygen"],diff:"hard",pts:3},
+    {q:"How many valence electrons does carbon have?",a:"4",choices:["2","3","4","6"],diff:"hard",pts:3},
+    {q:"Which war was fought between 1950 and 1953?",a:"Korean War",choices:["Vietnam War","Korean War","Gulf War","Cold War"],diff:"hard",pts:3},
+    {q:"What is the name of the process by which rocks are broken down?",a:"Weathering",choices:["Erosion","Weathering","Sedimentation","Subduction"],diff:"hard",pts:3},
+    {q:"What is the largest desert in the world?",a:"Antarctica",choices:["Sahara","Gobi","Arabia","Antarctica"],diff:"hard",pts:3},
+    {q:"What is the SI unit of electric current?",a:"Ampere",choices:["Volt","Watt","Ampere","Ohm"],diff:"hard",pts:3},
+    {q:"What does DNA stand for?",a:"Deoxyribonucleic acid",choices:["Deoxyribonucleic acid","Dioxyribose nucleic acid","Double nucleic acid","Deoxyribose nitrogen acid"],diff:"hard",pts:3},
+    {q:"Which ancient wonder was located in Alexandria?",a:"The Lighthouse",choices:["The Colossus","The Hanging Gardens","The Lighthouse","The Mausoleum"],diff:"hard",pts:3},
+    {q:"What is the name of the force that keeps planets in orbit?",a:"Gravity",choices:["Magnetism","Gravity","Centrifugal force","Nuclear force"],diff:"hard",pts:3},
+    {q:"What is the Coriolis effect?",a:"Wind deflection due to Earth's rotation",choices:["Ocean current patterns","Wind deflection due to Earth's rotation","Tidal force of the Moon","Pressure changes in weather"],diff:"hard",pts:3},
+    {q:"What is the half-life concept in physics?",a:"Time for half of radioactive atoms to decay",choices:["Time a wave takes to travel","Time for half of radioactive atoms to decay","Half the speed of light","Half the energy of a reaction"],diff:"hard",pts:3},
+  ]
+};
+
+const DIFF_COLOR={easy:"#1D9E75",medium:"#BA7517",hard:"#D85A30"};
+const LABELS=["A","B","C","D"];
+const ROUND_TOTAL=6;
+const AGE_GROUPS=[{id:"4-6",label:"Ages 4–6",emoji:"🌱",desc:"Simple & fun"},{id:"7-8",label:"Ages 7–8",emoji:"🌟",desc:"Getting clever"},{id:"9-12",label:"Ages 9–12",emoji:"🚀",desc:"Challenge mode"}];
+const CHEERS=n=>[`Woohoo, ${n}! That's correct! Amazing job!`,`Yes! Great answer, ${n}! You're so smart!`,`Fantastic, ${n}! You got it right!`,`Awesome, ${n}! You're on fire!`,`Brilliant, ${n}! Keep it up!`];
+const ENCOUR=n=>[`That's okay, ${n}! You'll get the next one!`,`Don't give up, ${n}! You're doing great!`,`Keep trying, ${n}! Every mistake helps you learn!`,`Almost, ${n}! You're getting smarter every round!`,`No worries, ${n}! The next question is yours!`];
+
+function shuffle(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function fmtTime(s){return`${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;}
+function speak(text){window.speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.rate=0.95;u.pitch=1.2;window.speechSynthesis.speak(u);}
+
+function App(){
+  const [phase,setPhase]=useState("start");
+  const [nameInput,setNameInput]=useState("");
+  const [playerName,setPlayerName]=useState("");
+  const [ageGroup,setAgeGroup]=useState("");
+  const [questions,setQuestions]=useState([]);
+  const [roundIdx,setRoundIdx]=useState(0);
+  const [score,setScore]=useState(0);
+  const [selected,setSelected]=useState(null);
+  const [answered,setAnswered]=useState(false);
+  const [feedbackMsg,setFeedbackMsg]=useState("");
+  const [timer,setTimer]=useState(180);
+  const timerRef=useRef(null);
+  const current=questions[roundIdx]||null;
+
+  const startGame=()=>{
+    if(!ageGroup){alert("Please select an age group!");return;}
+    const name=nameInput.trim()||"Player";
+    setPlayerName(name);
+    const q=shuffle(QUESTIONS[ageGroup]).slice(0,ROUND_TOTAL);
+    setQuestions(q);
+    setRoundIdx(0);setScore(0);
+    setSelected(null);setAnswered(false);setFeedbackMsg("");
+    setTimer(180);
+    speak(`Let's go, ${name}! Good luck!`);
+    setPhase("answer");
+  };
+
+  const exitGame=()=>{
+    clearInterval(timerRef.current);
+    window.speechSynthesis.cancel();
+    setPhase("start");setNameInput("");setPlayerName("");setAgeGroup("");
+  };
+
+  useEffect(()=>{
+    if(phase!=="answer")return;
+    clearInterval(timerRef.current);
+    timerRef.current=setInterval(()=>{
+      setTimer(t=>{if(t<=1){clearInterval(timerRef.current);setAnswered(true);return 0;}return t-1;});
+    },1000);
+    return()=>clearInterval(timerRef.current);
+  },[phase,roundIdx]);
+
+  const selectChoice=(choice)=>{
+    if(answered)return;
+    clearInterval(timerRef.current);
+    setSelected(choice);setAnswered(true);
+    const correct=choice===current.a;
+    if(correct) setScore(s=>s+current.pts);
+    const msgs=correct?CHEERS(playerName):ENCOUR(playerName);
+    const msg=msgs[Math.floor(Math.random()*msgs.length)];
+    setFeedbackMsg(msg);speak(msg);
+  };
+
+  const nextRound=()=>{
+    const next=roundIdx+1;
+    setFeedbackMsg("");
+    if(next>=ROUND_TOTAL){setPhase("result");}
+    else{setRoundIdx(next);setSelected(null);setAnswered(false);setTimer(180);}
+  };
+
+  // ── Start ──
+  if(phase==="start") return(
+    <div style={{paddingTop:"1.5rem"}}>
+      <div style={{textAlign:"center",marginBottom:24}}>
+        <div style={{fontSize:48,marginBottom:8}}>🧠</div>
+        <h1 style={{fontSize:28,fontWeight:700,color:"#222"}}>Smart Brain</h1>
+      </div>
+      <div style={{marginBottom:16}}>
+        <label style={{fontSize:14,color:"#555",display:"block",marginBottom:6}}>What's your name?</label>
+        <input value={nameInput} onChange={e=>setNameInput(e.target.value)}
+          onKeyDown={e=>e.key==="Enter"&&startGame()} placeholder="Enter your name…"/>
+      </div>
+      <div style={{marginBottom:24}}>
+        <label style={{fontSize:14,color:"#555",display:"block",marginBottom:8}}>Select your age group:</label>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
+          {AGE_GROUPS.map(g=>(
+            <button key={g.id} className={`age-btn${ageGroup===g.id?" selected":""}`} onClick={()=>setAgeGroup(g.id)}>
+              <div style={{fontSize:26,marginBottom:4}}>{g.emoji}</div>
+              <div style={{fontSize:13,fontWeight:600,color:"#222"}}>{g.label}</div>
+              <div style={{fontSize:11,color:"#888",marginTop:2}}>{g.desc}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+      <button onClick={startGame} style={{width:"100%",fontSize:15,padding:"12px",background:ageGroup?"#4a7fe5":"#ccc",color:"#fff",border:"none",borderRadius:12}}>
+        Start game 🚀
+      </button>
+    </div>
+  );
+
+  // ── Answer ──
+  if(phase==="answer"&&current) return(
+    <div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+        <span className="muted">Round {roundIdx+1}/{ROUND_TOTAL} · <span style={{color:DIFF_COLOR[current.diff],fontWeight:600,textTransform:"capitalize"}}>{current.diff}</span></span>
+        <div style={{display:"flex",gap:10,alignItems:"center"}}>
+          <span style={{fontSize:13,fontWeight:600,color:timer<=10?"#D85A30":"#888"}}>{fmtTime(timer)}</span>
+          <button onClick={exitGame} style={{fontSize:12,padding:"4px 10px",color:"#888"}}>✕ Exit</button>
+        </div>
+      </div>
+      <div style={{fontSize:17,fontWeight:600,color:"#222",marginBottom:18,lineHeight:1.5}}>{current.q}</div>
+      {current.choices.map((choice,i)=>{
+        let bg="#fff",border="1px solid #ddd",op=1;
+        if(answered){
+          if(choice===current.a){bg="#e6f9f2";border="1px solid #1D9E75";}
+          else if(choice===selected){bg="#fdecea";border="1px solid #D85A30";}
+          else op=0.4;
+        }
+        return(
+          <div key={i} onClick={()=>selectChoice(choice)}
+            style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",marginBottom:8,borderRadius:12,border,background:bg,opacity:op,cursor:answered?"default":"pointer"}}>
+            <span style={{minWidth:28,height:28,borderRadius:"50%",background:"#f0f0f0",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:600,color:"#555",flexShrink:0}}>{LABELS[i]}</span>
+            <span style={{fontSize:15,color:"#222"}}>{choice}</span>
+          </div>
+        );
+      })}
+      {answered&&(
+        <div style={{marginTop:16,textAlign:"center"}}>
+          <div style={{fontSize:15,fontWeight:600,marginBottom:14,color:selected===current.a?"#1D9E75":"#D85A30"}}>{feedbackMsg}</div>
+          <button onClick={nextRound} style={{fontSize:14,padding:"10px 24px"}}>
+            {roundIdx+1<ROUND_TOTAL?"Next round ›":"See results ›"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+
+  // ── Result ──
+  if(phase==="result"){
+    const maxScore=ROUND_TOTAL*3;
+    const pct=Math.round((score/maxScore)*100);
+    const verdict=pct>=90?"Genius! 🏆":pct>=70?"Smart Brain! 🌟":pct>=50?"Good job! 👍":"Keep practising! 💪";
+    return(
+      <div style={{textAlign:"center",paddingTop:"1rem"}}>
+        <div style={{fontSize:48,marginBottom:8}}>🧠</div>
+        <h2 style={{fontSize:22,fontWeight:700,marginBottom:4,color:"#222"}}>{playerName}, {verdict}</h2>
+        <p className="muted" style={{marginBottom:24}}>Here's how you did:</p>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:28}}>
+          {[["Score",score],["Max possible",maxScore]].map(([l,v])=>(
+            <div key={l} style={{background:"#f5f5f0",borderRadius:12,padding:"16px 8px"}}>
+              <div className="muted" style={{marginBottom:4}}>{l}</div>
+              <div style={{fontSize:30,fontWeight:700,color:"#222"}}>{v}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{background:"#eef3fd",borderRadius:12,padding:"14px",marginBottom:24}}>
+          <div className="muted" style={{marginBottom:4}}>Accuracy</div>
+          <div style={{fontSize:30,fontWeight:700,color:"#4a7fe5"}}>{pct}%</div>
+        </div>
+        <button onClick={()=>setPhase("start")} style={{fontSize:15,padding:"12px 32px",background:"#4a7fe5",color:"#fff",border:"none",borderRadius:12}}>Play again 🔄</button>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
